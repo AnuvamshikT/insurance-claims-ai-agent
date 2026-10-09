@@ -1,5 +1,6 @@
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
+from datetime import date
 
 
 class SearchClaimInput(BaseModel):
@@ -16,6 +17,48 @@ class SearchClaimTool(BaseTool):
         "and return the claim details."
     )
     args_schema: type[BaseModel] = SearchClaimInput
+
+    def _validate_claim(self, claim: dict, requested_claim_id: str) -> list[str]:
+        errors = []
+
+        required_fields = [
+            "claim_id",
+            "policy_number",
+            "claim_type",
+            "date_of_loss",
+            "claim_amount",
+            "status",
+            "description",
+        ]
+
+        for field in required_fields:
+            if field not in claim or claim[field] is None or claim[field] == "":
+                errors.append(f"Missing required field: {field}")
+
+        if errors:
+            return errors
+
+        if claim["claim_id"] != requested_claim_id:
+            errors.append("Claim ID does not match the requested ID.")
+
+        if claim["claim_type"] not in ["Auto", "Home"]:
+            errors.append("Invalid claim type.")
+
+        if not isinstance(claim["claim_amount"], (int, float)) or isinstance(claim["claim_amount"], bool) or claim["claim_amount"] <= 0:
+            errors.append("Claim amount must be a positive number.")
+
+        try:
+            date.fromisoformat(claim["date_of_loss"])
+        except (ValueError, TypeError):
+            errors.append("Date of loss must be a valid ISO date (YYYY-MM-DD).")
+
+        if not isinstance(claim["policy_number"], str):
+            errors.append("Policy number must be a string.")
+
+        if not isinstance(claim["description"], str):
+            errors.append("Claim description must be a string.")
+
+        return errors
 
     def _run(self, claim_id: str) -> str:
         claims = {
@@ -45,10 +88,16 @@ class SearchClaimTool(BaseTool):
             },
         }
 
-        claim = claims.get(claim_id.strip().upper())
+        requested_claim_id = claim_id.strip().upper()
+        claim = claims.get(requested_claim_id)
 
         if not claim:
-            return f"No claim was found with claim ID: {claim_id}"
+            return f"No claim was found with claim ID: {requested_claim_id}"
+
+        errors = self._validate_claim(claim, requested_claim_id)
+
+        if errors:
+            return "Claim validation failed: " + "; ".join(errors)
 
         return str(claim)
 

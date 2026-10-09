@@ -16,10 +16,11 @@
 "description": "Review insurance claim {claim_id} using the search_claim tool. Identify the claim type and key facts, determine the relevant coverage information available, identify missing or inconsistent information, and produce a clear preliminary claim assessment. Do not make a final coverage or payment decision.",
       // Clear definition of what the output should look like
       "expected_output": "A clear preliminary insurance claim assessment that summarizes the claim type, key facts, relevant coverage information, missing or inconsistent information, and any issues requiring further review. The assessment must clearly state that it is not a final coverage or payment decision.",
-
+      "output_pydantic": {"python": "tools.claim_assessment.ClaimAssessment"},
       // Optional task guardrail(s) validate output before completion
       // Use "guardrail" for one rule or "guardrails" for many
-      // Failed guardrails retry up to guardrail_max_retries times
+      // Failed guardrails retry up to guardrail_max_retries timesO
+
       // "guardrail": "Every factual claim needs context support.",
       // "guardrails": [
       //   "Every factual claim must be supported by context.",
